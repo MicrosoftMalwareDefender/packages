@@ -168,18 +168,20 @@ func getLocalCIDR() (string, error) {
 }
 
 func writeToVulnerableFile(ip string) {
-	file, err := os.OpenFile("Vulnerable.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	filePath := "C:\\Windows\\loveorhate\\Vulnerable.txt"
+	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		fmt.Println("Error opening or creating Vulnerable.txt:", err)
+		fmt.Println("Error opening or creating", filePath, ":", err)
 		return
 	}
 	defer file.Close()
 
 	_, err = file.WriteString(ip + "\n")
 	if err != nil {
-		fmt.Println("Error writing to Vulnerable.txt:", err)
+		fmt.Println("Error writing to", filePath, ":", err)
 	}
 }
+
 
 func Vunlscanner() {
 	// Read SMB hosts from smbip.txt

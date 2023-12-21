@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"path/filepath"
 )
 
-func DownloadFile(url, fileName string) error {
+func DownloadFile(url, fileName, destPath string) error {
 	// Perform the HTTP request
 	response, err := http.Get(url)
 	if err != nil {
@@ -26,8 +27,13 @@ func DownloadFile(url, fileName string) error {
 		return err
 	}
 
-	// Save the content to a file in the current directory
-	filePath := filepath.Join(".", fileName)
+	// Create the destination directory if it doesn't exist
+	if err := os.MkdirAll(destPath, 0755); err != nil {
+		return err
+	}
+
+	// Save the content to a file in the specified directory
+	filePath := filepath.Join(destPath, fileName)
 	err = ioutil.WriteFile(filePath, content, 0644)
 	if err != nil {
 		return err

